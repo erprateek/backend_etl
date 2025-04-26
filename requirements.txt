@@ -3,3 +3,5 @@ pandas
 uvicorn
 boto3
 pydantic
+aiofiles  # For FastAPI file upload handling
+python-multipart  # For file uploads
