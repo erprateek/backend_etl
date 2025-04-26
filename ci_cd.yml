@@ -1,0 +1,33 @@
+name: Deploy FastAPI App to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
+    - name: Set up Python environment
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Deploy FastAPI app using outputs.json
+      run: |
+        # Ensure the outputs.json file is present
+        scp -i ${{ secrets.EC2_SSH_PRIVATE_KEY }} outputs.json ec2-user@${{ secrets.EC2_PUBLIC_IP }}:/path/to/your/app/
+        ssh -i ${{ secrets.EC2_SSH_PRIVATE_KEY }} ec2-user@${{ secrets.EC2_PUBLIC_IP }} << EOF
+          # Use the outputs.json to deploy the app
+          bash /path/to/your/app/deploy_aws.sh
+        EOF
