@@ -1,8 +1,46 @@
-from flask import Flask
-import psycopg2
-from sqlalchemy import create_engine
+from fastapi import FastAPI
+import pandas as pd
+import os
+import boto3
+import json
 
-app = Flask(__name__)
+
+app = FastAPI(title="ETL API", description="API to trigger ETL process", version="1.0")
+
+with open('terraform-output.json') as f:
+    config = json.load(f)
+
+S3_BUCKET_NAME = config['etl_bucket_name']
+DYNAMODB_TABLE_NAME = config['dynamodb_table_name']
+
+# Initialize Boto3 clients
+s3_client = boto3.client('s3')
+dynamodb_client = boto3.client('dynamodb')
+
+@app.get("/")
+def read_root():
+    return {"message": "ETL Pipeline API is up and running!"}
+
+@app.get("/list_s3_objects")
+def list_s3_objects():
+    """List all objects in the S3 bucket."""
+    try:
+        response = s3_client.list_objects_v2(Bucket=S3_BUCKET_NAME)
+        objects = response.get('Contents', [])
+        return {"objects": [obj['Key'] for obj in objects]}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/get_dynamodb_items")
+def get_dynamodb_items():
+    """Fetch all items from DynamoDB table."""
+    try:
+        response = dynamodb_client.scan(TableName=DYNAMODB_TABLE_NAME)
+        items = response.get('Items', [])
+        return {"items": items}
+    except Exception as e:
+        return {"error": str(e)}
+
 
 def etl():
     # Load CSV files
